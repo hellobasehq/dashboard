@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="referrer" content="no-referrer">
+<title>ダッシュボード</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:        #f9f9f7;
+    --surface:      #fcfcfb;
+    --text-1:       #0b0b0b;
+    --text-2:       #52514e;
+    --muted:        #898781;
+    --grid:         #e1e0d9;
+    --axis:         #c3c2b7;
+    --border:       rgba(11,11,11,0.10);
+    --up:           #006300;
+    --down:         #d03b3b;
+    --good:         #0ca30c;
+    --warning:      #fab219;
+    --serious:      #ec835a;
+    --critical:     #d03b3b;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d; --surface: #1a1a19;
+      --text-1: #ffffff; --text-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --up: #0ca30c;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--plane); color: var(--text-1);
+    font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    font-size: 15px; line-height: 1.6;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px;
+    margin-bottom: 20px;
+  }
+  header.top h1 { font-size: 20px; margin: 0; letter-spacing: .01em; }
+  .stamp { color: var(--muted); font-size: 13px; }
+  .stamp a { color: inherit; }
+  .sync.bad {
+    color: var(--critical); font-weight: 600;
+    border: 1px solid var(--critical); border-radius: 6px; padding: 1px 7px;
+  }
+  .refresh {
+    margin-left: auto; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-2); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+  }
+  .refresh:hover { color: var(--text-1); }
+
+  section { margin-bottom: 32px; }
+  h2 {
+    font-size: 13px; font-weight: 600; letter-spacing: .08em; color: var(--muted);
+    margin: 0 0 12px; text-transform: none;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .h2note { font-weight: 400; letter-spacing: 0; font-size: 12px; color: var(--muted); }
+  .mini-btn {
+    font: inherit; font-size: 11.5px; font-weight: 500; letter-spacing: 0;
+    color: var(--text-2); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer;
+  }
+  .mini-btn:hover:not(:disabled) { color: var(--text-1); }
+  .mini-btn:disabled { opacity: .55; cursor: default; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+  }
+
+  /* --- KPI --- */
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .sns-kpis { grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); margin-bottom: 16px; }
+  .kpi .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .kpi .value { font-size: 26px; font-weight: 650; letter-spacing: -.01em; line-height: 1.15; }
+  .kpi .value .unit { font-size: 14px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+  .kpi .delta { font-size: 12.5px; margin-top: 4px; color: var(--text-2); }
+  .kpi .delta.up { color: var(--up); }
+  .kpi .delta.down { color: var(--down); }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi svg { display: block; margin-top: 10px; width: 100%; height: 26px; overflow: visible; }
+
+  /* --- charts --- */
+  .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .chart-box { position: relative; height: 300px; margin-top: 4px; }
+  .chart-box.short { height: 240px; }
+  .cap { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+
+  /* --- waterfall --- */
+  .wf { display: grid; gap: 8px; }
+  .wf-row { display: grid; grid-template-columns: 110px 1fr 64px; align-items: center; gap: 10px; font-size: 13px; }
+  .wf-row .bar { height: 14px; border-radius: 4px; }
+  .wf-row .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+  .wf-row.total { font-weight: 650; }
+  .wf-row.total .num { color: var(--text-1); }
+
+  /* --- table --- */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 9px 10px; text-align: right; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--axis); }
+  td { border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  tr.dim td { color: var(--muted); }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: 1px; }
+  .chg { font-size: 12px; }
+  .chg.up { color: var(--up); } .chg.down { color: var(--down); }
+  .table-scroll { overflow-x: auto; }
+
+  /* --- alerts --- */
+  .alert { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px;
+           border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-bottom: 8px; }
+  .alert .ico { flex: none; width: 18px; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.5; }
+  .alert.critical .ico { color: var(--critical); }
+  .alert.serious  .ico { color: var(--serious); }
+  .alert.warning  .ico { color: var(--warning); }
+  .alert .t { font-weight: 600; margin-right: 8px; }
+  .alert .b { color: var(--text-2); font-size: 13.5px; }
+
+  details.detail { margin-top: 10px; }
+  details.detail > summary {
+    cursor: pointer; font-size: 13.5px; color: var(--text-2);
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    list-style: none;
+  }
+  details.detail > summary::-webkit-details-marker { display: none; }
+  details.detail > summary::before { content: "▸ "; color: var(--muted); }
+  details.detail[open] > summary::before { content: "▾ "; }
+  details.detail .card { margin-top: 8px; }
+
+  /* --- 講評 --- */
+  .comment { padding: 20px 22px; }
+  .comment .lead { font-size: 16px; line-height: 1.75; margin: 0 0 18px; }
+  .comment .block { margin-bottom: 16px; }
+  .comment .block:last-child { margin-bottom: 0; }
+  .comment .block > h3 {
+    font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted);
+    margin: 0 0 8px; display: flex; align-items: center; gap: 7px;
+  }
+  .comment .block > h3::before { content: ""; width: 3px; height: 12px; border-radius: 2px; background: var(--muted); }
+  .comment .block.good > h3::before { background: var(--s3); }
+  .comment .block.concern > h3::before { background: var(--s8); }
+  .comment .block.action > h3::before { background: var(--s1); }
+  .comment .item { margin-bottom: 9px; font-size: 14px; line-height: 1.7; }
+  .comment .item:last-child { margin-bottom: 0; }
+  .comment .item b { font-weight: 650; margin-right: 8px; }
+  .comment .item .sev { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .comment .watch {
+    margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grid);
+    font-size: 13.5px; color: var(--text-2);
+  }
+  .comment .watch b { color: var(--text-1); margin-right: 8px; }
+  .comment .by { margin-top: 14px; font-size: 11.5px; color: var(--muted); }
+  .comment pre { white-space: pre-wrap; font: inherit; margin: 0; }
+
+  /* --- 月次メモ --- */
+  .note-item {
+    display: flex; gap: 12px; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--grid); font-size: 13.5px; line-height: 1.7;
+  }
+  .note-item:last-child { border-bottom: none; }
+  .note-t {
+    flex: none; min-width: 108px; font-weight: 600; color: var(--text-1);
+    font-size: 12.5px; padding-top: 1px;
+  }
+  .note-b { color: var(--text-2); }
+  .note-month { margin-bottom: 18px; }
+  .note-month:last-child { margin-bottom: 0; }
+  .note-month h4 {
+    font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--muted);
+    margin: 0 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--axis);
+  }
+
+  /* --- 分析 --- */
+  .mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .mini .card { padding: 16px 18px; }
+  .mini .card.span { grid-column: 1 / -1; }
+  .mini .card.span .cap { margin: -4px 0 12px; }
+  .mini h3 { font-size: 12.5px; font-weight: 600; color: var(--text-2); margin: 0 0 12px; }
+  .mini .big { font-size: 22px; font-weight: 650; letter-spacing: -.01em; }
+  .mini .big .unit { font-size: 13px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+  .mini .note { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .barrow { display: grid; grid-template-columns: 1fr 74px; align-items: center; gap: 8px;
+            font-size: 12.5px; margin-bottom: 7px; }
+  .barrow .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barrow .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+  .barrow .track { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .barrow .track i { display: block; height: 100%; border-radius: 3px; }
+  .factrow { display: flex; justify-content: space-between; gap: 12px;
+             font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--grid); }
+  .factrow:last-child { border-bottom: none; }
+  .factrow .k { color: var(--text-2); }
+  .factrow .v { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+
+  .empty { color: var(--muted); font-size: 13.5px; padding: 6px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--text-2); margin-top: 12px; }
+  .legend span.k { display: inline-flex; align-items: center; }
+
+  #loading { padding: 80px 0; text-align: center; color: var(--muted); }
+  #error { display: none; padding: 20px; border-radius: 10px; border: 1px solid var(--critical);
+           color: var(--critical); background: var(--surface); font-size: 14px; white-space: pre-wrap; }
+
+  @media (max-width: 980px) {
+    .kpis { grid-template-columns: repeat(3, 1fr); }
+    .mini { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 16px 12px 60px; }
+    .kpis, .sns-kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mini { grid-template-columns: 1fr; gap: 10px; }
+    .comment { padding: 16px 16px; }
+    .note-item { flex-direction: column; gap: 2px; }
+    .note-t { min-width: 0; }
+    .comment .lead { font-size: 15px; }
+    .card { padding: 14px 15px; }
+    .kpi .value { font-size: 22px; }
+    .chart-box { height: 260px; }
+    header.top h1 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>サブスク＆SNS ダッシュボード</h1>
+    <span class="stamp" id="stamp"></span>
+    <button class="refresh" id="refresh" type="button" style="display:none">最新に更新</button>
+  </header>
+
+  <div id="error"></div>
+  <div id="loading">集計中です…</div>
+  <div id="app" style="display:none"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+var SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+var charts = [];
+var DATA = null;
+var VIEWER_KEY = new URLSearchParams(location.search).get('k') || '';
+
+// データは Apps Script のWebアプリに、Googleのログイン情報を付けずに取りに行く。
+// 画面をGoogleの外（GitHub Pages）に置くことで、複数のGoogleアカウントにログインしていても開ける。
+var API = 'https://script.google.com/macros/s/AKfycbwj_Ukexi2FAimLs2eqYrIIETM6B8IIBS5rj7MDhTFQC3Ewz2niUr6rbd1b373d-KaI1g/exec';
+
+function callApi(page, onOk, onErr) {
+  fetch(API + '?p=' + page + '&k=' + encodeURIComponent(VIEWER_KEY), { credentials: 'omit', cache: 'no-store' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(onOk)
+    .catch(function (e) { onErr({ message: '読み込みに失敗しました（' + (e && e.message || e) + '）' }); });
+}
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function yen(n) { return n == null ? '—' : '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function num(n) { return n == null ? '—' : Math.round(n).toLocaleString('ja-JP'); }
+function pct(v) { return v == null ? '—' : (v * 100).toFixed(2) + '%'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+  return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]; }); }
+function ym(k) { var p = k.split('-'); return p[0] + '/' + p[1]; }
+
+/* 契約データをどこから何件読んでいるか */
+function sourcesHtml(s) {
+  if (!s || !s.stripe) return '';
+  return ' ／ <span class="sync">Stripe ' + num(s.stripe) + '件</span>';
+}
+
+/* kintone同期がいつ走ったか。止まっていれば赤く出す */
+function syncHtml(s) {
+  if (!s) return '';
+  if (s.error) {
+    return ' ／ <span class="sync bad">同期エラー ' + esc(s.error) + '</span>';
+  }
+  var label = 'kintone同期 ' + esc(s.at) + '（' + num(s.count) + '件）';
+  if (s.stale) {
+    return ' ／ <span class="sync bad">' + label + ' ― '
+         + Math.round(s.hoursAgo) + '時間更新されていません</span>';
+  }
+  return ' ／ <span class="sync">' + label + '</span>';
+}
+
+/* 差分表示。churn系は「下がったら良い」なので invert する */
+function deltaHtml(d, fmt, invert) {
+  if (d == null || d === 0) return '<div class="delta">前月比 ±0</div>';
+  var good = invert ? d < 0 : d > 0;
+  var sign = d > 0 ? '+' : '−';
+  return '<div class="delta ' + (good ? 'up' : 'down') + '">前月比 ' + sign + fmt(Math.abs(d)) + '</div>';
+}
+
+function spark(values, color) {
+  if (!values || values.length < 2) return '';
+  var w = 100, h = 26;
+  var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  var span = (max - min) || 1;
+  var pts = values.map(function (v, i) {
+    var x = (i / (values.length - 1)) * w;
+    var y = h - ((v - min) / span) * (h - 4) - 2;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">'
+       + '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2" '
+       + 'stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+/* ---------------- レンダリング ---------------- */
+
+function render(d) {
+  DATA = d;
+
+  var guest = !!(d.viewer && d.viewer.role === 'guest');
+  if (guest) {
+    var rb = document.getElementById('refresh');
+    if (rb) rb.style.display = 'none';
+  }
+
+  document.getElementById('stamp').innerHTML =
+    esc(d.latestMonth.replace('-', '年') + '月時点') + ' ／ 集計 ' + esc(d.generatedAt)
+    + syncHtml(d.sync) + sourcesHtml(d.sources)
+    + (d.sourceUrl ? ' ／ <a href="' + esc(d.sourceUrl) + '" target="_blank" rel="noopener">元シート</a>' : '');
+
+  var html = '';
+  html += kpiSection(d);
+  html += commentarySection();
+  html += notesSection(d);
+  html += alertSection(d);
+  html += trendSection(d);
+  html += analysisSection(d);
+  html += tableSection(d);
+  html += snsSection(d);
+  if (d.detail) html += detailSection(d);
+
+  var app = document.getElementById('app');
+  app.innerHTML = html;
+  document.getElementById('loading').style.display = 'none';
+  app.style.display = '';
+
+  charts.forEach(function (c) { c.destroy(); });
+  charts = [];
+  drawMrr(d); drawMembers(d); drawFlow(d); drawSns(d); drawLine(d);
+
+  var btn = document.getElementById('commentRefresh');
+  if (btn) {
+    if (guest) btn.style.display = 'none';
+    else btn.addEventListener('click', function () { loadCommentary(true); });
+  }
+  loadCommentary(false);
+}
+
+function kpiSection(d) {
+  var k = d.kpi, c1 = css('--s1');
+  function card(label, value, deltaBlock, sub, sparkVals) {
+    return '<div class="card kpi"><div class="label">' + label + '</div>'
+         + '<div class="value">' + value + '</div>' + deltaBlock
+         + (sub ? '<div class="sub">' + sub + '</div>' : '')
+         + spark(sparkVals, c1) + '</div>';
+  }
+  var s = '<section><h2>' + esc(ym(d.latestMonth)) + ' サマリー（有料契約ベース・税抜）</h2><div class="kpis">';
+  s += card('MRR（月末有効売上）', yen(k.mrr.value), deltaHtml(k.mrr.delta, yen, false), null, k.mrr.spark);
+  s += card('有効会員数', num(k.active.value) + '<span class="unit">名</span>',
+            deltaHtml(k.active.delta, num, false),
+            '無料付与 ' + num(d.freeGrants) + '件は別枠', k.active.spark);
+  s += card('当月 純増', (k.net.value > 0 ? '+' : '') + num(k.net.value) + '<span class="unit">名</span>',
+            deltaHtml(k.net.delta, num, false),
+            '新規 ' + k.started + ' ／ 解約 ' + k.ended, k.net.spark);
+  s += card('解約率', pct(k.churnRate.value),
+            deltaHtml(k.churnRate.delta, function (v) { return pct(v); }, true),
+            '30日以内解約を除くと ' + pct(k.churnRate.sub), k.churnRate.spark);
+  s += card('ARPU', yen(k.arpu.value), deltaHtml(k.arpu.delta, yen, false), null, k.arpu.spark);
+  s += card('LTV', yen(k.ltv.value), deltaHtml(k.ltv.delta, yen, false),
+            'ARPU×0.964÷実質解約率', k.ltv.spark);
+  s += '</div></section>';
+  return s;
+}
+
+function trendSection(d) {
+  var w = d.waterfall;
+  var maxv = Math.max(w.base, w.end, 1);
+  function row(label, value, color, cls, signed) {
+    var width = Math.min(100, Math.abs(value) / maxv * 100);
+    return '<div class="wf-row ' + (cls || '') + '"><span>' + label + '</span>'
+         + '<span class="bar" style="width:' + width.toFixed(1) + '%;background:' + color + '"></span>'
+         + '<span class="num">' + (signed && value > 0 ? '+' : '') + num(value) + '</span></div>';
+  }
+
+  var s = '<section><h2>推移</h2><div class="grid-2">';
+  s += '<div class="card"><p class="cap">MRRの推移（サービス別の積み上げ・直近' + d.months.length + 'か月）</p>'
+     + '<div class="chart-box"><canvas id="mrrChart"></canvas></div>'
+     + '<div class="legend" id="mrrLegend"></div></div>';
+  s += '<div class="card"><p class="cap">' + esc(ym(d.latestMonth)) + ' の会員数の動き</p><div class="wf">'
+     + row('前月末', w.base, css('--muted'))
+     + row('新規', w.started, css('--s1'), '', true)
+     + row('30日以内解約', w.quick, css('--s8'))
+     + row('通常解約', w.normal, css('--s2'))
+     + row('今月末', w.end, css('--s3'), 'total')
+     + '</div></div>';
+  s += '</div>';
+
+  s += '<div class="grid-2" style="margin-top:16px">'
+     + '<div class="card"><p class="cap">新規・解約の件数推移</p>'
+     + '<div class="chart-box short"><canvas id="flowChart"></canvas></div>'
+     + '<div class="legend">'
+     + '<span class="k"><i class="swatch" style="background:' + css('--s1') + '"></i>新規</span>'
+     + '<span class="k"><i class="swatch" style="background:' + css('--s8') + '"></i>解約</span>'
+     + '</div></div>'
+     + '<div class="card"><p class="cap">有効会員数の推移</p>'
+     + '<div class="chart-box short"><canvas id="memberChart"></canvas></div></div>'
+     + '</div></section>';
+  return s;
+}
+
+function tableSection(d) {
+  var live = d.serviceTable.filter(function (r) { return r.live; });
+  var dead = d.serviceTable.filter(function (r) { return !r.live; });
+
+  function chg(v, fmt, invert) {
+    if (v == null || v === 0) return '<span class="chg">±0</span>';
+    var good = invert ? v < 0 : v > 0;
+    return '<span class="chg ' + (good ? 'up' : 'down') + '">' + (v > 0 ? '+' : '−') + fmt(Math.abs(v)) + '</span>';
+  }
+  function rows(list, dim) {
+    return list.map(function (r, i) {
+      var sw = dim ? '' : '<i class="swatch" style="background:' + css(SERIES[i % 8]) + '"></i>';
+      return '<tr' + (dim ? ' class="dim"' : '') + '><td>' + sw + esc(r.name) + '</td>'
+        + '<td>' + num(r.active) + '<br>' + chg(r.activeDelta, num, false) + '</td>'
+        + '<td>' + yen(r.mrr) + '<br>' + chg(r.mrrDelta, yen, false) + '</td>'
+        + '<td>' + pct(r.churnRate) + '<br>' + chg(r.churnDelta, function (v) { return pct(v); }, true) + '</td>'
+        + '<td>' + yen(r.arpu) + '</td>'
+        + '<td>' + yen(r.ltv) + '</td>'
+        + '<td>' + esc(r.lastStart) + '</td></tr>';
+    }).join('');
+  }
+
+  var head = '<tr><th>サービス</th><th>有効人数</th><th>MRR</th><th>解約率</th><th>ARPU</th><th>LTV</th><th>最終新規</th></tr>';
+  var s = '<section><h2>サービス別</h2><div class="card"><div class="table-scroll"><table>'
+        + '<thead>' + head + '</thead><tbody>' + rows(live, false) + '</tbody></table></div>';
+  if (dead.length) {
+    s += '<details class="detail"><summary>現在有効0のサービス ' + dead.length + '件を表示</summary>'
+       + '<div class="card"><div class="table-scroll"><table><thead>' + head + '</thead><tbody>'
+       + rows(dead, true) + '</tbody></table></div></div></details>';
+  }
+  s += '</div></section>';
+  return s;
+}
+
+function snsSection(d) {
+  var sns = d.sns;
+  var s = '<section><h2>SNS 登録者推移</h2>';
+  if (sns.empty) {
+    s += '<div class="card"><p class="empty">「' + esc(sns.platforms.join('／'))
+       + '」の登録者数がまだ入力されていません。<br>'
+       + 'スプレッドシートの <strong>SNS登録者数</strong> シートに、年月（yyyy-MM）と各SNSの登録者数を'
+       + '1行ずつ入力すると、ここにカードとグラフが出ます。</p></div></section>';
+    return s;
+  }
+
+  var lastIdx = sns.months.length - 1;
+  s += '<div class="kpis sns-kpis">';
+  sns.platforms.forEach(function (p, i) {
+    var series = sns.values[p].filter(function (v) { return v != null; });
+    var cur = sns.values[p][lastIdx];
+    var prev = lastIdx > 0 ? sns.values[p][lastIdx - 1] : null;
+    var delta = (cur != null && prev != null) ? cur - prev : null;
+    s += '<div class="card kpi"><div class="label"><i class="swatch" style="background:'
+       + css(SERIES[i]) + '"></i>' + esc(p) + '</div>'
+       + '<div class="value">' + num(cur) + '</div>'
+       + deltaHtml(delta, num, false)
+       + spark(series, css(SERIES[i])) + '</div>';
+  });
+  s += '</div>';
+  s += '<div class="card"><p class="cap">登録者数の推移</p>'
+     + '<div class="chart-box"><canvas id="snsChart"></canvas></div>'
+     + '<div class="legend">' + sns.platforms.map(function (p, i) {
+         return '<span class="k"><i class="swatch" style="background:' + css(SERIES[i]) + '"></i>' + esc(p) + '</span>';
+       }).join('') + '</div></div>';
+
+  s += lineBlock(sns.line);
+  return s + '</section>';
+}
+
+/* 公式LINEの内訳。単位が3種類あるので、1つのグラフに重ねずに分けます */
+function lineBlock(L) {
+  if (!L || !L.metrics || !L.metrics.length) return '';
+  var has = {};
+  L.metrics.forEach(function (m) {
+    has[m.key] = (L.values[m.key] || []).some(function (v) { return v != null; });
+  });
+  if (!Object.keys(has).some(function (k) { return has[k]; })) return '';
+
+  var s = '<h2 style="margin-top:28px">公式LINE の内訳</h2><div class="mini">';
+
+  if (has.active || has.total) {
+    s += '<div class="card"><h3>友だち数</h3>'
+       + '<div class="chart-box short"><canvas id="lineFriends"></canvas></div>'
+       + '<div class="legend">'
+       + (has.active ? '<span class="k"><i class="swatch" style="background:' + css('--s1') + '"></i>有効人数</span>' : '')
+       + (has.total ? '<span class="k"><i class="swatch" style="background:' + css('--s3') + '"></i>総友だち数</span>' : '')
+       + '</div></div>';
+  }
+  if (has.added || has.blocked) {
+    s += '<div class="card"><h3>月ごとの増減</h3>'
+       + '<div class="chart-box short"><canvas id="lineFlow"></canvas></div>'
+       + '<div class="legend">'
+       + (has.added ? '<span class="k"><i class="swatch" style="background:' + css('--s1') + '"></i>友だち追加</span>' : '')
+       + (has.blocked ? '<span class="k"><i class="swatch" style="background:' + css('--s8') + '"></i>ブロック</span>' : '')
+       + '</div></div>';
+  }
+  if (has.rate) {
+    var last = null;
+    (L.values.rate || []).forEach(function (v) { if (v != null) last = v; });
+    s += '<div class="card"><h3>累計ブロック率</h3>'
+       + '<div class="big">' + (last == null ? '—' : last.toFixed(2) + '%') + '</div>'
+       + '<div class="chart-box short" style="height:170px"><canvas id="lineRate"></canvas></div></div>';
+  }
+  return s + '</div>';
+}
+
+/* ---- Claudeの講評（本文は後から差し込む） ---- */
+
+function commentarySection() {
+  return '<section id="commentSection">'
+       + '<h2>今月の講評'
+       + '<span class="h2note" id="commentStamp"></span>'
+       + '<button type="button" class="mini-btn" id="commentRefresh">作り直す</button>'
+       + '</h2>'
+       + '<div class="card comment" id="commentBody">'
+       + '<p class="empty">読み込んでいます…</p></div></section>';
+}
+
+function renderCommentary(c) {
+  var el = document.getElementById('commentBody');
+  if (!el) return;
+
+  var st = document.getElementById('commentStamp');
+  if (st) st.textContent = (c.available && c.generatedAt) ? '作成 ' + c.generatedAt : '';
+
+  if (!c.available) {
+    var msg;
+    if (c.reason === 'no_key') {
+      msg = 'Claudeの講評を出すには、スクリプトプロパティに <strong>ANTHROPIC_API_KEY</strong> を設定してください。'
+          + '設定するまで、この下の「要対応」はルールで拾ったものだけが出ます。';
+    } else if (c.reason === 'refusal') {
+      msg = '今回は講評を生成できませんでした。下の数字はそのまま使えます。';
+    } else {
+      msg = '講評の取得に失敗しました。' + esc(c.message || c.status || '');
+    }
+    el.innerHTML = '<p class="empty">' + msg + '</p>';
+    return;
+  }
+
+  if (c.raw) {
+    el.innerHTML = '<pre>' + esc(c.raw) + '</pre>'
+                 + '<div class="by">Claude（' + esc(c.model || '') + '）／ ' + esc(c.generatedAt || '') + '</div>';
+    return;
+  }
+
+  var sev = { high: '重い', medium: '中くらい', low: '軽い' };
+  function block(cls, label, items, withSev) {
+    if (!items || !items.length) return '';
+    return '<div class="block ' + cls + '"><h3>' + label + '</h3>'
+      + items.map(function (it) {
+          return '<div class="item"><b>' + esc(it.title) + '</b>' + esc(it.body)
+            + (withSev && sev[it.severity] ? '<span class="sev">影響：' + sev[it.severity] + '</span>' : '')
+            + '</div>';
+        }).join('')
+      + '</div>';
+  }
+
+  var h = '';
+  if (c.summary) h += '<p class="lead">' + esc(c.summary) + '</p>';
+  h += block('good', '効いていること', c.good, false);
+  h += block('concern', '引っかかるところ', c.concerns, true);
+  h += block('action', '打ち手', c.actions, false);
+  if (c.watch) h += '<div class="watch"><b>来月の見どころ</b>' + esc(c.watch) + '</div>';
+  h += '<div class="by">Claude（' + esc(c.model || '') + '）が上の集計値だけを見て書いています。'
+     + '契約者名は送っていません。</div>';
+  el.innerHTML = h;
+}
+
+function loadCommentary(force) {
+  var el = document.getElementById('commentBody');
+  var btn = document.getElementById('commentRefresh');
+  var st = document.getElementById('commentStamp');
+
+  if (force) {
+    if (el) el.innerHTML = '<p class="empty">Claudeが今の数字を読んでいます。30秒ほどかかります…</p>';
+    if (st) st.textContent = '';
+    if (btn) { btn.disabled = true; btn.textContent = '作成中…'; }
+  }
+
+  function done() {
+    if (btn) { btn.disabled = false; btn.textContent = '作り直す'; }
+  }
+
+  callApi('comment', function (json) {
+      done();
+      try { renderCommentary(JSON.parse(json)); }
+      catch (e) { renderCommentary({ available: false, reason: 'error', message: String(e) }); }
+    }, function (err) {
+      done();
+      renderCommentary({ available: false, reason: 'error', message: (err && err.message) || String(err) });
+    });
+}
+
+/* ---- 今月のできごと（月次メモ） ---- */
+
+function notesSection(d) {
+  var all = d.notes || [];
+  var cur = all.filter(function (n) { return n.month === d.latestMonth; });
+  var past = all.filter(function (n) { return n.month !== d.latestMonth; });
+
+  function items(list) {
+    return list.map(function (n) {
+      return '<div class="note-item">'
+        + (n.title ? '<span class="note-t">' + esc(n.title) + '</span>' : '')
+        + '<span class="note-b">' + esc(n.body) + '</span></div>';
+    }).join('');
+  }
+
+  var s = '<section><h2>' + esc(ym(d.latestMonth)) + ' のできごと</h2>';
+  s += '<div class="card">';
+  if (cur.length) {
+    s += items(cur);
+  } else {
+    s += '<p class="empty">この月の記録はまだありません。'
+       + 'スプレッドシートの <strong>月次メモ</strong> シートに、施策・キャンペーン・気づいたことを'
+       + '1行ずつ書いておくと、ここに出て、講評の材料にもなります。</p>';
+  }
+  s += '</div>';
+
+  if (past.length) {
+    var byMonth = {}, order = [];
+    past.forEach(function (n) {
+      if (!byMonth[n.month]) { byMonth[n.month] = []; order.push(n.month); }
+      byMonth[n.month].push(n);
+    });
+    s += '<details class="detail"><summary>過去の記録 ' + order.length + 'か月ぶん</summary>'
+       + '<div class="card">'
+       + order.map(function (m) {
+           return '<div class="note-month"><h4>' + esc(ym(m)) + '</h4>' + items(byMonth[m]) + '</div>';
+         }).join('')
+       + '</div></details>';
+  }
+  return s + '</section>';
+}
+
+/* ---- 分析 ---- */
+
+function analysisSection(d) {
+  var a = d.analysis;
+
+  function bars(items, positive) {
+    if (!items.length) return '<p class="empty">該当なしです。</p>';
+    var max = Math.max.apply(null, items.map(function (i) { return Math.abs(i.diff); })) || 1;
+    return items.map(function (i) {
+      var w = Math.abs(i.diff) / max * 100;
+      return '<div class="barrow"><span class="lbl">' + esc(i.name) + '</span>'
+        + '<span class="val">' + (i.diff > 0 ? '+' : '−') + yen(Math.abs(i.diff)) + '</span>'
+        + '<span class="track"><i style="width:' + w.toFixed(1) + '%;background:'
+        + css(positive ? '--s1' : '--s8') + '"></i></span></div>';
+    }).join('');
+  }
+  function fact(k, v) {
+    return '<div class="factrow"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+  }
+  function growth(v) {
+    if (v == null) return '—';
+    return (v > 0 ? '+' : '−') + (Math.abs(v) * 100).toFixed(1) + '%';
+  }
+
+  var s = '<section><h2>分析</h2><div class="mini">';
+
+  if (a.cohorts && a.cohorts.length) {
+    function pct1(v) { return (v * 100).toFixed(1) + '%'; }
+    function cell(d) {
+      if (!d.recent || !d.prev) return '<td>—</td>';
+      var drop = d.prev.rate - d.recent.rate;
+      var cls = drop >= 0.05 ? 'down' : (drop <= -0.05 ? 'up' : '');
+      return '<td>' + pct1(d.prev.rate) + ' → ' + pct1(d.recent.rate)
+           + '<br><span class="chg ' + cls + '">'
+           + (drop > 0 ? '−' : '+') + Math.abs(drop * 100).toFixed(1) + 'pt</span></td>';
+    }
+    s += '<div class="card span"><h3>コホート残存率（入った人がどれだけ残ったか）</h3>'
+       + '<p class="cap">その前の1年に入った人 → 直近1年に入った人。同じ経過月数どうしの比較です。'
+       + '解約率と違い、既存会員が増えても薄まりません。</p>'
+       + '<div class="table-scroll"><table><thead><tr><th>サービス</th>'
+       + '<th>6か月残存</th><th>12か月残存</th><th>直近の人数</th></tr></thead><tbody>'
+       + a.cohorts.map(function (c) {
+           return '<tr><td>' + esc(c.name) + '</td>' + cell(c.m6) + cell(c.m12)
+             + '<td>' + (c.m12.recent ? num(c.m12.recent.n) + '名' : '—') + '</td></tr>';
+         }).join('')
+       + '</tbody></table></div></div>';
+  }
+
+  s += '<div class="card"><h3>MRRを押し上げたもの</h3>' + bars(a.contribUp, true) + '</div>';
+  s += '<div class="card"><h3>MRRを押し下げたもの</h3>' + bars(a.contribDown, false) + '</div>';
+
+  s += '<div class="card"><h3>新規獲得のペース</h3>'
+     + '<div class="big">' + num(a.pace.forecast) + '<span class="unit">件</span></div>'
+     + '<p class="note">' + a.pace.daysInMonth + '日中 ' + a.pace.elapsedDays + '日経過で '
+     + a.pace.started + '件。この調子なら着地は上の数字です。直近6か月の平均は '
+     + a.pace.avg6 + '件'
+     + (a.pace.vsAvg === null ? '' : '（' + growth(a.pace.vsAvg) + '）') + '。</p></div>';
+
+  s += '<div class="card"><h3>伸び方</h3>'
+     + fact('MRR 3か月前比', growth(a.trend.mrr3m))
+     + fact('MRR 6か月前比', growth(a.trend.mrr6m))
+     + fact('MRR 1年前比', growth(a.trend.mrr12m))
+     + fact('会員数 1年前比', growth(a.trend.active12m))
+     + (a.trend.yoy ? '<p class="note">1年前は MRR ' + yen(a.trend.yoy.mrr)
+        + '、会員 ' + num(a.trend.yoy.active) + '名でした。</p>' : '')
+     + '</div>';
+
+  var r = a.retention;
+  s += '<div class="card"><h3>解約の中身（直近1年）</h3>'
+     + (r.sample ? fact('解約件数', num(r.sample) + '件')
+       + fact('平均継続日数', num(r.avgDays) + '日')
+       + fact('中央値', num(r.medianDays) + '日')
+       + fact('30日以内', num(r.within30) + '件（' + pct(r.within30 / r.sample) + '）')
+       + fact('90日以内', num(r.within90) + '件（' + pct(r.within90 / r.sample) + '）')
+       : '<p class="empty">解約データがありません。</p>')
+     + '</div>';
+
+  var co = a.concentration;
+  s += '<div class="card"><h3>売上の集中</h3>'
+     + (co.top1 ? '<div class="big">' + pct(co.top1.share) + '</div>'
+       + '<p class="note">最大サービス「' + esc(co.top1.name) + '」がMRRに占める割合です。'
+       + '上位3サービスで ' + pct(co.top3Share) + '、有効なサービスは '
+       + co.liveServices + '種類。</p>' : '<p class="empty">—</p>')
+     + '</div>';
+
+  var cs = a.crossSell;
+  s += '<div class="card"><h3>サービスの併用</h3>'
+     + '<div class="big">' + cs.perPerson + '<span class="unit">件 / 人</span></div>'
+     + '<p class="note">有料契約者 ' + num(cs.people) + '名が ' + num(cs.contracts)
+     + '件を契約しています。2件以上を持つ人は ' + pct(cs.multiRate) + '。</p></div>';
+
+  if (a.priceBands.length) {
+    var maxB = Math.max.apply(null, a.priceBands.map(function (b) { return b.people; })) || 1;
+    s += '<div class="card"><h3>価格帯の分布</h3>'
+       + a.priceBands.map(function (b) {
+           return '<div class="barrow"><span class="lbl">' + esc(b.label) + '</span>'
+             + '<span class="val">' + num(b.people) + '名</span>'
+             + '<span class="track"><i style="width:' + (b.people / maxB * 100).toFixed(1)
+             + '%;background:' + css('--s1') + '"></i></span></div>';
+         }).join('') + '</div>';
+  }
+
+  var q = a.quality;
+  if (q.missingPrice || q.endBeforeStart || q.futureStart || q.endInFuture) {
+    s += '<div class="card"><h3>データの状態</h3>'
+       + (q.missingPrice ? fact('価格未入力の有効契約', num(q.missingPrice) + '件') : '')
+       + (q.endBeforeStart ? fact('終了日 < 開始日', num(q.endBeforeStart) + '件') : '')
+       + (q.futureStart ? fact('開始日が未来', num(q.futureStart) + '件') : '')
+       + (q.endInFuture ? fact('終了日が未来', num(q.endInFuture) + '件') : '')
+       + '<p class="note">価格未入力の契約はMRRに入っていません。</p></div>';
+  }
+
+  return s + '</div></section>';
+}
+
+function alertSection(d) {
+  var s = '<section><h2>要対応</h2>';
+  if (!d.alerts.length) {
+    s += '<div class="card"><p class="empty">解約率の悪化、短期解約の集中、新規ペースの鈍化、MRRの減少、売上の集中、'
+       + '新規が止まっているサービス、データの入力漏れ ―― いずれも今月は基準に触れていません。</p></div>';
+  } else {
+    var ico = { critical: '！', serious: '▲', warning: '•' };
+    d.alerts.forEach(function (a) {
+      s += '<div class="alert ' + a.level + '"><span class="ico">' + ico[a.level] + '</span>'
+         + '<span><span class="t">' + esc(a.title) + '</span><span class="b">' + esc(a.body) + '</span></span></div>';
+    });
+  }
+  return s + '</section>';
+}
+
+function detailSection(d) {
+  function list(items, isEnd) {
+    if (!items.length) return '<p class="empty">該当なしです。</p>';
+    var withPerson = items.some(function (r) { return r.person != null; });
+    return '<div class="table-scroll"><table><thead><tr><th>日付</th>'
+      + (withPerson ? '<th>契約者</th>' : '') + '<th>サービス</th>'
+      + '<th>' + (isEnd ? '継続日数' : '金額') + '</th></tr></thead><tbody>'
+      + items.map(function (r) {
+          return '<tr' + (r.grant ? ' class="dim"' : '') + '><td>' + esc(r.date) + '</td>'
+            + (withPerson ? '<td>' + esc(r.person) + '</td>' : '') + '<td>' + esc(r.service) + '</td>'
+            + '<td>' + (isEnd ? num(r.days) + '日' : (r.price ? yen(r.price) : '無料')) + '</td></tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }
+  return '<section><h2>' + esc(ym(d.latestMonth)) + ' の明細</h2>'
+    + '<details class="detail"><summary>今月 利用開始した ' + d.detail.started.length + '件</summary>'
+    + '<div class="card">' + list(d.detail.started, false) + '</div></details>'
+    + '<details class="detail"><summary>今月 利用終了した ' + d.detail.ended.length + '件</summary>'
+    + '<div class="card">' + list(d.detail.ended, true) + '</div></details></section>';
+}
+
+/* ---------------- グラフ ---------------- */
+
+function baseOptions(extra) {
+  var o = {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+        borderColor: css('--border'), borderWidth: 1, padding: 10, boxPadding: 4,
+        titleFont: { weight: '600' }, cornerRadius: 8, displayColors: true
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, border: { color: css('--axis') },
+           ticks: { color: css('--muted'), font: { size: 11 }, maxRotation: 0, autoSkipPadding: 14 } },
+      y: { grid: { color: css('--grid'), drawTicks: false }, border: { display: false },
+           ticks: { color: css('--muted'), font: { size: 11 }, padding: 8 } }
+    }
+  };
+  return Object.assign(o, extra || {});
+}
+
+function drawMrr(d) {
+  var el = document.getElementById('mrrChart');
+  if (!el) return;
+  var labels = d.months.map(ym);
+  var ds = d.mrrSeries.map(function (s, i) {
+    return {
+      label: s.name, data: s.data, backgroundColor: css(SERIES[i % 8]),
+      borderColor: css('--surface'), borderWidth: 2, borderSkipped: false,
+      borderRadius: i === d.mrrSeries.length - 1 ? { topLeft: 4, topRight: 4 } : 0
+    };
+  });
+  charts.push(new Chart(el, {
+    type: 'bar',
+    data: { labels: labels, datasets: ds },
+    options: baseOptions({
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color: css('--axis') },
+             ticks: { color: css('--muted'), font: { size: 11 }, maxRotation: 0, autoSkipPadding: 14 } },
+        y: { stacked: true, grid: { color: css('--grid'), drawTicks: false }, border: { display: false },
+             ticks: { color: css('--muted'), font: { size: 11 }, padding: 8,
+                      callback: function (v) { return '¥' + (v / 10000) + '万'; } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+          borderColor: css('--border'), borderWidth: 1, padding: 10, cornerRadius: 8,
+          callbacks: { label: function (c) { return c.dataset.label + '  ' + yen(c.parsed.y); } }
+        }
+      }
+    })
+  }));
+  document.getElementById('mrrLegend').innerHTML = d.mrrSeries.map(function (s, i) {
+    return '<span class="k"><i class="swatch" style="background:' + css(SERIES[i % 8]) + '"></i>' + esc(s.name) + '</span>';
+  }).join('');
+}
+
+function drawMembers(d) {
+  var el = document.getElementById('memberChart');
+  if (!el) return;
+  charts.push(new Chart(el, {
+    type: 'line',
+    data: {
+      labels: d.months.map(ym),
+      datasets: [{
+        label: '有効会員数', data: d.memberSeries,
+        borderColor: css('--s1'), backgroundColor: css('--s1'),
+        borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.25
+      }]
+    },
+    options: baseOptions({
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+          borderColor: css('--border'), borderWidth: 1, padding: 10, cornerRadius: 8, displayColors: false,
+          callbacks: { label: function (c) { return num(c.parsed.y) + '名'; } }
+        }
+      }
+    })
+  }));
+}
+
+function drawFlow(d) {
+  var el = document.getElementById('flowChart');
+  if (!el) return;
+  charts.push(new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: d.months.map(ym),
+      datasets: [
+        { label: '新規', data: d.churnSeries.map(function (x) { return x.started; }),
+          backgroundColor: css('--s1'), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false },
+        { label: '解約', data: d.churnSeries.map(function (x) { return -x.ended; }),
+          backgroundColor: css('--s8'), borderRadius: { bottomLeft: 4, bottomRight: 4 }, borderSkipped: false }
+      ]
+    },
+    options: baseOptions({
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+          borderColor: css('--border'), borderWidth: 1, padding: 10, cornerRadius: 8,
+          callbacks: { label: function (c) { return c.dataset.label + '  ' + num(Math.abs(c.parsed.y)) + '件'; } }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { color: css('--axis') },
+             ticks: { color: css('--muted'), font: { size: 11 }, maxRotation: 0, autoSkipPadding: 14 } },
+        y: { grid: { color: css('--grid'), drawTicks: false }, border: { display: false },
+             ticks: { color: css('--muted'), font: { size: 11 }, padding: 8,
+                      callback: function (v) { return Math.abs(v); } } }
+      }
+    })
+  }));
+}
+
+function drawLine(d) {
+  var L = d.sns && d.sns.line;
+  if (!L) return;
+  var labels = L.months.map(ym);
+  function tip(fmt) {
+    return {
+      backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+      borderColor: css('--border'), borderWidth: 1, padding: 10, cornerRadius: 8,
+      callbacks: { label: function (c) { return c.dataset.label + '  ' + fmt(c.parsed.y); } }
+    };
+  }
+
+  var el = document.getElementById('lineFriends');
+  if (el) {
+    var ds = [];
+    if (L.values.active) ds.push({ label: '有効人数', data: L.values.active,
+      borderColor: css('--s1'), backgroundColor: css('--s1'),
+      borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.25, spanGaps: true });
+    if (L.values.total) ds.push({ label: '総友だち数', data: L.values.total,
+      borderColor: css('--s3'), backgroundColor: css('--s3'),
+      borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.25, spanGaps: true });
+    charts.push(new Chart(el, { type: 'line', data: { labels: labels, datasets: ds },
+      options: baseOptions({ plugins: { legend: { display: false },
+        tooltip: tip(function (v) { return num(v) + '名'; }) } }) }));
+  }
+
+  el = document.getElementById('lineFlow');
+  if (el) {
+    var ds2 = [];
+    if (L.values.added) ds2.push({ label: '友だち追加', data: L.values.added,
+      backgroundColor: css('--s1'), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false });
+    if (L.values.blocked) ds2.push({ label: 'ブロック',
+      data: L.values.blocked.map(function (v) { return v == null ? null : -v; }),
+      backgroundColor: css('--s8'), borderRadius: { bottomLeft: 4, bottomRight: 4 }, borderSkipped: false });
+    charts.push(new Chart(el, { type: 'bar', data: { labels: labels, datasets: ds2 },
+      options: baseOptions({
+        plugins: { legend: { display: false },
+          tooltip: tip(function (v) { return num(Math.abs(v)) + '名'; }) },
+        scales: {
+          x: { stacked: true, grid: { display: false }, border: { color: css('--axis') },
+               ticks: { color: css('--muted'), font: { size: 11 }, maxRotation: 0, autoSkipPadding: 14 } },
+          y: { grid: { color: css('--grid'), drawTicks: false }, border: { display: false },
+               ticks: { color: css('--muted'), font: { size: 11 }, padding: 8,
+                        callback: function (v) { return Math.abs(v); } } }
+        }
+      }) }));
+  }
+
+  el = document.getElementById('lineRate');
+  if (el) {
+    charts.push(new Chart(el, { type: 'line',
+      data: { labels: labels, datasets: [{ label: '累計ブロック率', data: L.values.rate,
+        borderColor: css('--s8'), backgroundColor: css('--s8'),
+        borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.25, spanGaps: true }] },
+      options: baseOptions({
+        plugins: { legend: { display: false },
+          tooltip: tip(function (v) { return v.toFixed(2) + '%'; }) },
+        scales: {
+          x: { grid: { display: false }, border: { color: css('--axis') },
+               ticks: { color: css('--muted'), font: { size: 11 }, maxRotation: 0, autoSkipPadding: 14 } },
+          y: { grid: { color: css('--grid'), drawTicks: false }, border: { display: false },
+               ticks: { color: css('--muted'), font: { size: 11 }, padding: 8,
+                        callback: function (v) { return v + '%'; } } }
+        }
+      }) }));
+  }
+}
+
+function drawSns(d) {
+  var el = document.getElementById('snsChart');
+  if (!el) return;
+  charts.push(new Chart(el, {
+    type: 'line',
+    data: {
+      labels: d.sns.months.map(ym),
+      datasets: d.sns.platforms.map(function (p, i) {
+        return {
+          label: p, data: d.sns.values[p],
+          borderColor: css(SERIES[i]), backgroundColor: css(SERIES[i]),
+          borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.25, spanGaps: true
+        };
+      })
+    },
+    options: baseOptions({
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: css('--surface'), titleColor: css('--text-1'), bodyColor: css('--text-2'),
+          borderColor: css('--border'), borderWidth: 1, padding: 10, cornerRadius: 8,
+          callbacks: { label: function (c) { return c.dataset.label + '  ' + num(c.parsed.y); } }
+        }
+      }
+    })
+  }));
+}
+
+/* ---------------- 起動 ---------------- */
+
+function load(force) {
+  document.getElementById('error').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loading').style.display = '';
+  if (!VIEWER_KEY) { showDenied('no_key'); return; }
+  callApi('data', function (json) {
+      var d = JSON.parse(json);
+      if (d.denied) { showDenied(d.reason); return; }
+      render(d);
+    }, function (err) {
+      document.getElementById('loading').style.display = 'none';
+      var e = document.getElementById('error');
+      e.textContent = '表示できませんでした：' + (err && err.message ? err.message : err);
+      e.style.display = '';
+    });
+}
+
+function showDenied(reason) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('stamp').textContent = '';
+  var rb = document.getElementById('refresh');
+  if (rb) rb.style.display = 'none';
+
+  var msg = {
+    no_key:  'このページを見るには、個別に発行されたURLが必要です。',
+    bad_key: 'このURLは無効です。発行元にご確認ください。',
+    revoked: 'このURLは現在停止されています。発行元にご確認ください。'
+  }[reason] || 'このページを表示する権限がありません。';
+
+  var e = document.getElementById('error');
+  e.textContent = msg;
+  e.style.display = '';
+}
+
+// ヘッダーのボタンは集計だけを作り直します。講評は講評側のボタンで。
+document.getElementById('refresh').addEventListener('click', function () { load(true); });
+load(false);
+</script>
+</body>
+</html>
