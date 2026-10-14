@@ -1043,7 +1043,7 @@ function load(force) {
       document.getElementById('loading').style.display = 'none';
       var e = document.getElementById('error');
       e.textContent = '表示できませんでした：' + (err && err.message ? err.message : err);
-      e.style.display = '';
+      e.style.display = 'block';
     });
 }
 
@@ -1062,7 +1062,7 @@ function showDenied(reason) {
 
   var e = document.getElementById('error');
   e.textContent = msg;
-  e.style.display = '';
+  e.style.display = 'block';
 }
 
 // ヘッダーのボタンは集計だけを作り直します。講評は講評側のボタンで。
